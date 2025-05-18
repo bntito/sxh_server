@@ -56,6 +56,13 @@ app.get("/participantes", (req, res) => {
   });
 });
 
+app.get("/api/test-db", (req, res) => {
+  db.query("SELECT 1", (err, result) => {
+    if (err) return res.status(500).send(err.message);
+    res.send("DB ok");
+  });
+});
+
 app.post("/participantes", (req, res) => {
   const { nombre, whatsapp, numeroRifa, fecha, servidor } = req.body;
 
