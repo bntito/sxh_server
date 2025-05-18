@@ -57,20 +57,22 @@ app.get("/participantes", (req, res) => {
 });
 
 app.post("/participantes", (req, res) => {
-  const { nombre, whatsapp, numeroRifa, fecha } = req.body;
-  if (!nombre || !whatsapp || !numeroRifa || !fecha) {
+  const { nombre, whatsapp, numeroRifa, fecha, servidor } = req.body;
+
+  if (!nombre || !whatsapp || !numeroRifa || !fecha || !servidor) {
     return res.status(400).json({ error: "Todos los campos son requeridos" });
   }
 
   db.query(
-    "INSERT INTO participantes (nombre, whatsapp, numeroRifa, fecha) VALUES (?, ?, ?, ?)",
-    [nombre, whatsapp, numeroRifa, fecha],
+    "INSERT INTO participantes (nombre, whatsapp, numeroRifa, fecha, servidor) VALUES (?, ?, ?, ?, ?)",
+    [nombre, whatsapp, numeroRifa, fecha, servidor],
     (err) => {
       if (err) return res.status(500).json(err);
       res.json({ message: "Participante agregado" });
     }
   );
 });
+
 
 app.delete("/participantes/:id", (req, res) => {
   const { id } = req.params;
