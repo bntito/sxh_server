@@ -1,15 +1,12 @@
 const dotenv = require("dotenv");
-dotenv.config({ path: './src/.env' }); // Ruta explícita al archivo .env en la carpeta src
+dotenv.config({ path: './src/.env' });
 
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 
 const app = express();
-app.use(cors({
-  origin: "*"
-}));
-
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 const db = mysql.createConnection({
@@ -22,23 +19,22 @@ const db = mysql.createConnection({
 db.connect((err) => {
   if (err) {
     console.error("Error de conexión:", err);
+    process.exit(1); // Detener servidor si no conecta
   } else {
     console.log("📡 Conectado a MySQL");
 
-    // Crear la tabla si no existe
     const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS participantes (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      nombre VARCHAR(255) NOT NULL,
-      whatsapp VARCHAR(255),
-      numeroRifa VARCHAR(255),
-      fecha DATE,
-      servidor VARCHAR(255) -- nuevo campo
-    );
-  `;
-  
-    
-    db.query(createTableQuery, (err, results) => {
+      CREATE TABLE IF NOT EXISTS participantes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        whatsapp VARCHAR(255),
+        numeroRifa VARCHAR(255),
+        fecha DATE,
+        servidor VARCHAR(255)
+      );
+    `;
+
+    db.query(createTableQuery, (err) => {
       if (err) {
         console.error("Error al crear la tabla de participantes:", err);
       } else {
@@ -48,16 +44,22 @@ db.connect((err) => {
   }
 });
 
-// Rutas para los participantes
 app.get("/participantes", (req, res) => {
   db.query("SELECT * FROM participantes", (err, results) => {
-    if (err) return res.status(500).json(err);
+    if (err) {
+      console.error("Error en consulta participantes:", err);
+      return res.status(500).json({ error: "Error al obtener participantes" });
+    }
+    if (!Array.isArray(results)) {
+      console.error("Resultados inesperados:", results);
+      return res.status(500).json({ error: "Datos de participantes inválidos" });
+    }
     res.json(results);
   });
 });
 
 app.get("/api/test-db", (req, res) => {
-  db.query("SELECT 1", (err, result) => {
+  db.query("SELECT 1", (err) => {
     if (err) return res.status(500).send(err.message);
     res.send("DB ok");
   });
@@ -80,7 +82,6 @@ app.post("/participantes", (req, res) => {
   );
 });
 
-
 app.delete("/participantes/:id", (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM participantes WHERE id = ?", [id], (err) => {
@@ -89,7 +90,6 @@ app.delete("/participantes/:id", (req, res) => {
   });
 });
 
-/* Ruta para mantener vivo el server */
 app.get('/api/ping', (req, res) => {
   res.status(200).send('pong');
 });
