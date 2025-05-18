@@ -27,14 +27,16 @@ db.connect((err) => {
 
     // Crear la tabla si no existe
     const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS participantes (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nombre VARCHAR(255) NOT NULL,
-        whatsapp VARCHAR(255),
-        numeroRifa VARCHAR(255),
-        fecha DATE
-      );
-    `;
+    CREATE TABLE IF NOT EXISTS participantes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      whatsapp VARCHAR(255),
+      numeroRifa VARCHAR(255),
+      fecha DATE,
+      servidor VARCHAR(255) -- nuevo campo
+    );
+  `;
+  
     
     db.query(createTableQuery, (err, results) => {
       if (err) {
@@ -76,6 +78,11 @@ app.delete("/participantes/:id", (req, res) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Participante eliminado" });
   });
+});
+
+/* Ruta para mantener vivo el server */
+app.get('/api/ping', (req, res) => {
+  res.status(200).send('pong');
 });
 
 const PORT = process.env.PORT || 5000;
