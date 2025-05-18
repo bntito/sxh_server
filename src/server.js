@@ -13,57 +13,57 @@ app.use(cors({
 
 app.use(express.json());
 
-const db = mysql.createConnection({
+const pool = mysql.createPool({
   host: process.env.DB_HOST || "",
   user: process.env.DB_USER || "",
   password: process.env.DB_PASS || "",
   database: process.env.DB_NAME || "",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
+pool.getConnection((err, connection) => {
   if (err) {
     console.error("Error de conexión:", err);
-    process.exit(1); // Detener servidor si no conecta
-  } else {
-    console.log("📡 Conectado a MySQL");
-
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS participantes (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nombre VARCHAR(255) NOT NULL,
-        whatsapp VARCHAR(255),
-        numeroRifa VARCHAR(255),
-        fecha DATE,
-        servidor VARCHAR(255)
-      );
-    `;
-
-    db.query(createTableQuery, (err) => {
-      if (err) {
-        console.error("Error al crear la tabla de participantes:", err);
-      } else {
-        console.log("✅ Tabla 'participantes' verificada o creada");
-      }
-    });
+    process.exit(1);
   }
+
+  console.log("📡 Conectado a MySQL");
+
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS participantes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      whatsapp VARCHAR(255),
+      numeroRifa VARCHAR(255),
+      fecha DATE,
+      servidor VARCHAR(255)
+    );
+  `;
+
+  connection.query(createTableQuery, (err) => {
+    connection.release();
+    if (err) {
+      console.error("Error al crear la tabla de participantes:", err);
+    } else {
+      console.log("✅ Tabla 'participantes' verificada o creada");
+    }
+  });
 });
 
 app.get("/participantes", (req, res) => {
-  db.query("SELECT * FROM participantes", (err, results) => {
+  pool.query("SELECT * FROM participantes", (err, results) => {
     if (err) {
       console.error("Error en consulta participantes:", err);
       return res.status(500).json({ error: "Error al obtener participantes" });
-    }
-    if (!Array.isArray(results)) {
-      console.error("Resultados inesperados:", results);
-      return res.status(500).json({ error: "Datos de participantes inválidos" });
     }
     res.json(results);
   });
 });
 
 app.get("/api/test-db", (req, res) => {
-  db.query("SELECT 1", (err) => {
+  pool.query("SELECT 1", (err) => {
     if (err) return res.status(500).send(err.message);
     res.send("DB ok");
   });
@@ -76,7 +76,7 @@ app.post("/participantes", (req, res) => {
     return res.status(400).json({ error: "Todos los campos son requeridos" });
   }
 
-  db.query(
+  pool.query(
     "INSERT INTO participantes (nombre, whatsapp, numeroRifa, fecha, servidor) VALUES (?, ?, ?, ?, ?)",
     [nombre, whatsapp, numeroRifa, fecha, servidor],
     (err) => {
@@ -88,7 +88,7 @@ app.post("/participantes", (req, res) => {
 
 app.delete("/participantes/:id", (req, res) => {
   const { id } = req.params;
-  db.query("DELETE FROM participantes WHERE id = ?", [id], (err) => {
+  pool.query("DELETE FROM participantes WHERE id = ?", [id], (err) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Participante eliminado" });
   });
