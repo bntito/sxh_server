@@ -72,16 +72,18 @@ app.get("/api/test-db", (req, res) => {
 app.post("/participantes", (req, res) => {
   const { nombre, whatsapp, numeroRifa, fecha, servidor } = req.body;
 
-  if (!nombre || !whatsapp || !numeroRifa || !fecha || !servidor) {
-    return res.status(400).json({ error: "Todos los campos son requeridos" });
+  if (!nombre || !whatsapp || !Array.isArray(numeroRifa) || !fecha || !servidor) {
+    return res.status(400).json({ error: "Todos los campos son requeridos y numeroRifa debe ser un array" });
   }
 
+  const values = numeroRifa.map((num) => [nombre, whatsapp, num, fecha, servidor]);
+
   pool.query(
-    "INSERT INTO participantes (nombre, whatsapp, numeroRifa, fecha, servidor) VALUES (?, ?, ?, ?, ?)",
-    [nombre, whatsapp, numeroRifa, fecha, servidor],
+    "INSERT INTO participantes (nombre, whatsapp, numeroRifa, fecha, servidor) VALUES ?",
+    [values],
     (err) => {
       if (err) return res.status(500).json(err);
-      res.json({ message: "Participante agregado" });
+      res.json({ message: "Participantes agregados" });
     }
   );
 });
