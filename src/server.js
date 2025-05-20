@@ -62,13 +62,6 @@ app.get("/participantes", (req, res) => {
   });
 });
 
-app.get("/api/test-db", (req, res) => {
-  pool.query("SELECT 1", (err) => {
-    if (err) return res.status(500).send(err.message);
-    res.send("DB ok");
-  });
-});
-
 app.post("/participantes", (req, res) => {
   const { nombre, whatsapp, numeroRifa, fecha, servidor } = req.body;
 
@@ -93,6 +86,28 @@ app.delete("/participantes/:id", (req, res) => {
   pool.query("DELETE FROM participantes WHERE id = ?", [id], (err) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Participante eliminado" });
+  });
+});
+
+// Ruta nueva para descargar los datos como archivo JSON
+app.get("/api/datos", (req, res) => {
+  pool.query("SELECT * FROM participantes", (err, results) => {
+    if (err) {
+      console.error("Error al consultar participantes:", err);
+      return res.status(500).json({ error: "Error al obtener datos" });
+    }
+
+    const data = JSON.stringify(results, null, 2);
+    res.setHeader("Content-Disposition", "attachment; filename=participantes.json");
+    res.setHeader("Content-Type", "application/json");
+    res.send(data);
+  });
+});
+
+app.get("/api/test-db", (req, res) => {
+  pool.query("SELECT 1", (err) => {
+    if (err) return res.status(500).send(err.message);
+    res.send("DB ok");
   });
 });
 
