@@ -31,7 +31,7 @@ pool.getConnection((err, connection) => {
 
   console.log("📡 Conectado a MySQL");
 
-  const createTableQuery = `
+  const crearParticipantes = `
     CREATE TABLE IF NOT EXISTS participantes (
       id INT AUTO_INCREMENT PRIMARY KEY,
       nombre VARCHAR(255) NOT NULL,
@@ -42,15 +42,36 @@ pool.getConnection((err, connection) => {
     );
   `;
 
-  connection.query(createTableQuery, (err) => {
+  const crearGanadores = `
+    CREATE TABLE IF NOT EXISTS ganadores (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      whatsapp VARCHAR(255),
+      numeroRifa TEXT NOT NULL,
+      fecha DATE,
+      servidor VARCHAR(255)
+    );
+  `;
+
+  connection.query(crearParticipantes, (err) => {
+    if (err) {
+      console.error("Error al crear tabla participantes:", err);
+    } else {
+      console.log("✅ Tabla 'participantes' lista");
+    }
+  });
+
+  connection.query(crearGanadores, (err) => {
     connection.release();
     if (err) {
-      console.error("Error al crear la tabla de participantes:", err);
+      console.error("Error al crear tabla ganadores:", err);
     } else {
-      console.log("✅ Tabla 'participantes' verificada o creada");
+      console.log("✅ Tabla 'ganadores' lista");
     }
   });
 });
+
+// === PARTICIPANTES ===
 
 app.get("/participantes", (req, res) => {
   pool.query("SELECT * FROM participantes", (err, results) => {
@@ -59,13 +80,6 @@ app.get("/participantes", (req, res) => {
       return res.status(500).json({ error: "Error al obtener participantes" });
     }
     res.json(results);
-  });
-});
-
-app.get("/api/test-db", (req, res) => {
-  pool.query("SELECT 1", (err) => {
-    if (err) return res.status(500).send(err.message);
-    res.send("DB ok");
   });
 });
 
@@ -93,6 +107,46 @@ app.delete("/participantes/:id", (req, res) => {
   pool.query("DELETE FROM participantes WHERE id = ?", [id], (err) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Participante eliminado" });
+  });
+});
+
+// === GANADORES ===
+
+app.get("/ganadores", (req, res) => {
+  pool.query("SELECT * FROM ganadores ORDER BY id DESC", (err, results) => {
+    if (err) {
+      console.error("Error al obtener ganadores:", err);
+      return res.status(500).json({ error: "Error al obtener ganadores" });
+    }
+    res.json(results);
+  });
+});
+
+app.post("/ganadores", (req, res) => {
+  const { nombre, whatsapp, numeroRifa, fecha, servidor } = req.body;
+
+  if (!nombre || !numeroRifa || !fecha) {
+    return res.status(400).json({ error: "Faltan campos obligatorios" });
+  }
+
+  const numeros = Array.isArray(numeroRifa) ? numeroRifa.join(",") : numeroRifa;
+
+  pool.query(
+    "INSERT INTO ganadores (nombre, whatsapp, numeroRifa, fecha, servidor) VALUES (?, ?, ?, ?, ?)",
+    [nombre, whatsapp, numeros, fecha, servidor],
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ message: "Ganador guardado" });
+    }
+  );
+});
+
+// === UTILIDADES ===
+
+app.get("/api/test-db", (req, res) => {
+  pool.query("SELECT 1", (err) => {
+    if (err) return res.status(500).send(err.message);
+    res.send("DB ok");
   });
 });
 
