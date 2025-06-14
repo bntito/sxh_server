@@ -141,7 +141,23 @@ app.post("/ganadores", (req, res) => {
   );
 });
 
-// === UTILIDADES ===
+// === DESCARGA DE DATOS ===
+
+app.get("/api/datos", (req, res) => {
+  pool.query("SELECT * FROM participantes", (err, results) => {
+    if (err) {
+      console.error("Error al consultar participantes:", err);
+      return res.status(500).json({ error: "Error al obtener datos" });
+    }
+
+    const data = JSON.stringify(results, null, 2);
+    res.setHeader("Content-Disposition", "attachment; filename=participantes.json");
+    res.setHeader("Content-Type", "application/json");
+    res.send(data);
+  });
+});
+
+// === TEST ===
 
 app.get("/api/test-db", (req, res) => {
   pool.query("SELECT 1", (err) => {
