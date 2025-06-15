@@ -49,7 +49,8 @@ pool.getConnection((err, connection) => {
       whatsapp VARCHAR(255),
       numeroRifa TEXT NOT NULL,
       fecha DATE,
-      servidor VARCHAR(255)
+      servidor VARCHAR(255),
+      entregado BOOLEAN DEFAULT FALSE
     );
   `;
 
@@ -123,23 +124,25 @@ app.get("/ganadores", (req, res) => {
 });
 
 app.post("/ganadores", (req, res) => {
-  const { nombre, whatsapp, numeroRifa, fecha, servidor } = req.body;
+  const { nombre, whatsapp, numeroRifa, fecha, servidor, entregado } = req.body;
 
   if (!nombre || !numeroRifa || !fecha) {
     return res.status(400).json({ error: "Faltan campos obligatorios" });
   }
 
   const numeros = Array.isArray(numeroRifa) ? numeroRifa.join(",") : numeroRifa;
+  const entregadoValor = entregado === true || entregado === 'true' ? 1 : 0;
 
   pool.query(
-    "INSERT INTO ganadores (nombre, whatsapp, numeroRifa, fecha, servidor) VALUES (?, ?, ?, ?, ?)",
-    [nombre, whatsapp, numeros, fecha, servidor],
+    "INSERT INTO ganadores (nombre, whatsapp, numeroRifa, fecha, servidor, entregado) VALUES (?, ?, ?, ?, ?, ?)",
+    [nombre, whatsapp, numeros, fecha, servidor, entregadoValor],
     (err) => {
       if (err) return res.status(500).json(err);
       res.json({ message: "Ganador guardado" });
     }
   );
 });
+
 
 // === DESCARGA DE DATOS ===
 
